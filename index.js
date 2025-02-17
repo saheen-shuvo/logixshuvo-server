@@ -3,7 +3,7 @@ const cors = require('cors');
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 //middleware
 app.use(cors());
@@ -50,6 +50,16 @@ async function run() {
         const newUser = {name, email, role};
         const result = await usersCollection.insertOne(newUser);
         res.send(result);
+    })
+
+    // CHANGE USER ROLE
+
+    // DELETE A USER
+    app.delete('/users/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
     })
 
     // Send a ping to confirm a successful connection
