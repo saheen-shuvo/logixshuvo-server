@@ -65,11 +65,18 @@ async function run() {
       next();
     };
 
-    // GET ALL USERS DATA
+    // GET ALL USERS 
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
+
+    // GET ALL DELIVERYMAN USERS
+app.get('/users/deliveryman', verifyToken, verifyAdmin, async(req, res) => {
+  const query = {role: "deliveryman"};
+  const result = await usersCollection.find(query).toArray();
+  res.send(result);
+})
 
     // REGISTER A NEW USER
     app.post("/users", async (req, res) => {
@@ -116,6 +123,21 @@ async function run() {
         admin = user?.role === "admin";
       }
       res.send({ admin });
+    });
+
+    // GET IS DELIVERYMAN
+    app.get("/users/deliveryman/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded?.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      let deliveryman = false;
+      if (user) {
+        deliveryman = user?.role === "deliveryman";
+      }
+      res.send({ deliveryman });
     });
 
     // VERIFY DELIVERY MAN
