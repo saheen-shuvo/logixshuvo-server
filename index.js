@@ -27,6 +27,9 @@ async function run() {
     await client.connect();
 
     const usersCollection = client.db("logixshuvoDB").collection("users");
+    const bookedParcelsCollection = client
+      .db("logixshuvoDB")
+      .collection("bookedParcels");
 
     // JWT RELATED API
     app.post("/jwt", async (req, res) => {
@@ -53,7 +56,7 @@ async function run() {
       });
     };
 
-        // VERIFY ADMIN
+    // VERIFY ADMIN
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
@@ -65,18 +68,23 @@ async function run() {
       next();
     };
 
-    // GET ALL USERS 
+    // GET ALL USERS
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
 
     // GET ALL DELIVERYMAN USERS
-app.get('/users/deliveryman', verifyToken, verifyAdmin, async(req, res) => {
-  const query = {role: "deliveryman"};
-  const result = await usersCollection.find(query).toArray();
-  res.send(result);
-})
+    app.get(
+      "/users/deliveryman",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const query = { role: "deliveryman" };
+        const result = await usersCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
 
     // REGISTER A NEW USER
     app.post("/users", async (req, res) => {
@@ -95,7 +103,7 @@ app.get('/users/deliveryman', verifyToken, verifyAdmin, async(req, res) => {
     });
 
     // CHANGE USER ROLE
-    app.patch("/users/role/:id",verifyToken, verifyAdmin, async (req, res) => {
+    app.patch("/users/role/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -155,6 +163,19 @@ app.get('/users/deliveryman', verifyToken, verifyAdmin, async(req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // POST BOOKED PARCEL
+    app.post("/bookedParcels", async (req, res) => {
+      const parcel = req.body;
+      const result = await bookedParcelsCollection.insertOne(parcel);
+      res.send(result);
+    });
+
+    // GET ALL BOOKED PARCELS
+    app.get("/bookedParcels", async (req, res) => {
+      const result = await bookedParcelsCollection.find().toArray();
       res.send(result);
     });
 
