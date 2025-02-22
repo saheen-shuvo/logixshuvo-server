@@ -179,6 +179,38 @@ async function run() {
       res.send(result);
     });
 
+    // GET USER EMAIL BASED BOOKED PARCELS
+    app.get("/parcels", async (req, res) => {
+      try {
+        const userEmail = req.query.email; 
+        if (!userEmail) {
+          return res.status(400).json({ message: "Email is required" });
+        }
+        const parcels = await bookedParcelsCollection.find({ email: userEmail }).toArray();
+        res.json(parcels);
+      } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+      }
+    });
+
+    // CANCEL A PARCEL BY USER
+    app.delete("/parcels/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        
+        const result = await bookedParcelsCollection.deleteOne(query);
+        
+        if (result.deletedCount === 1) {
+          res.json({ success: true, message: "Parcel deleted successfully" });
+        } else {
+          res.status(404).json({ success: false, message: "Parcel not found" });
+        }
+      } catch (error) {
+        res.status(500).json({ success: false, message: "Server error", error });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
