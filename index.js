@@ -182,32 +182,61 @@ async function run() {
     // GET USER EMAIL BASED BOOKED PARCELS
     app.get("/parcels", async (req, res) => {
       try {
-        const userEmail = req.query.email; 
+        const userEmail = req.query.email;
         if (!userEmail) {
           return res.status(400).json({ message: "Email is required" });
         }
-        const parcels = await bookedParcelsCollection.find({ email: userEmail }).toArray();
+        const parcels = await bookedParcelsCollection
+          .find({ email: userEmail })
+          .toArray();
         res.json(parcels);
       } catch (error) {
         res.status(500).json({ message: "Server error", error });
       }
     });
 
+    // GET PARCEL ID BASED
+    app.get('/parcels/:id', async(req, res) => {
+      const { id } = req.params;
+      const result = await bookedParcelsCollection.findOne({_id: new ObjectId(id)});
+      res.send(result);
+    })
+
+    app.put('/parcels/:id', async(req, res) => {
+      try {
+          const id = req.params.id;
+          let updatedData = req.body;
+          delete updatedData._id; 
+          const filter = { _id: new ObjectId(id) };
+          const update = { $set: updatedData };
+          const result = await bookedParcelsCollection.updateOne(filter, update);
+          if (result.matchedCount === 0) {
+              return res.status(404).json({ error: "Parcel not found" });
+          }
+          res.json({ success: true, modifiedCount: result.modifiedCount });
+      } catch (error) {
+          console.error("Error updating parcel:", error);
+          res.status(500).json({ error: "Server error", details: error.message });
+      }
+  });
+
     // CANCEL A PARCEL BY USER
-    app.delete("/parcels/:id", async (req, res) => {
+    app.delete("/parcels/:id", verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
-        
+
         const result = await bookedParcelsCollection.deleteOne(query);
-        
+
         if (result.deletedCount === 1) {
           res.json({ success: true, message: "Parcel deleted successfully" });
         } else {
           res.status(404).json({ success: false, message: "Parcel not found" });
         }
       } catch (error) {
-        res.status(500).json({ success: false, message: "Server error", error });
+        res
+          .status(500)
+          .json({ success: false, message: "Server error", error });
       }
     });
 
