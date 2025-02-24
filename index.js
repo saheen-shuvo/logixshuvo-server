@@ -88,7 +88,7 @@ async function run() {
 
     // REGISTER A NEW USER
     app.post("/users", async (req, res) => {
-      const { name, email, role } = req.body;
+      const { name, email, role, phone } = req.body;
 
       // check if the user exist or not
       const existingUser = await usersCollection.findOne({ email });
@@ -97,7 +97,7 @@ async function run() {
       }
 
       // insert new user
-      const newUser = { name, email, role };
+      const newUser = { name, email, role, phone };
       const result = await usersCollection.insertOne(newUser);
       res.send(result);
     });
@@ -177,6 +177,36 @@ async function run() {
     app.get("/bookedParcels", async (req, res) => {
       const result = await bookedParcelsCollection.find().toArray();
       res.send(result);
+    });
+
+    // UPDATE BOOKED PARCEL BY ADMIN
+    app.patch('/bookedParcels/:id', async(req, res) => {
+      try {    
+        const {id} = req.params;
+        const {deliveryStatus, deliveryManId, deliveryDate} = req.body;
+        
+        const result = await parcelsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              deliveryStatus,
+              deliveryManId: new ObjectId(deliveryManId),
+              deliveryDate,
+            },
+          }
+        );
+    
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Parcel not found" });
+        }
+    
+        res.status(200).json({
+          message: "Parcel updated successfully",
+          result,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Error updating parcel", error });
+      }
     });
 
     // GET USER EMAIL BASED BOOKED PARCELS
