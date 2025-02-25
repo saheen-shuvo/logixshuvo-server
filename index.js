@@ -102,7 +102,7 @@ async function run() {
       res.send(result);
     });
 
-    // CHANGE USER ROLE
+    // CHANGE USER ROLE BY ADMIN
     app.patch("/users/role/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
@@ -158,7 +158,7 @@ async function run() {
       next();
     };
 
-    // DELETE A USER
+    // DELETE A USER BY ADMIN
     app.delete("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -166,45 +166,47 @@ async function run() {
       res.send(result);
     });
 
-    // POST BOOKED PARCEL
+    // POST BOOKED PARCEL BY USER
     app.post("/bookedParcels", async (req, res) => {
       const parcel = req.body;
       const result = await bookedParcelsCollection.insertOne(parcel);
       res.send(result);
     });
 
-    // GET ALL BOOKED PARCELS
+    // GET ALL BOOKED PARCELS BY USER
     app.get("/bookedParcels", async (req, res) => {
       const result = await bookedParcelsCollection.find().toArray();
       res.send(result);
     });
 
     // UPDATE BOOKED PARCEL BY ADMIN
-    app.patch('/bookedParcels/:id', async(req, res) => {
-      try {    
-        const {id} = req.params;
-        const {deliveryStatus, deliveryManId, deliveryDate} = req.body;
-        
-        const result = await parcelsCollection.updateOne(
+    app.patch("/bookedParcels/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { deliveryStatus, deliveryManId, approximateDeliveryDate } =
+          req.body;
+
+        const result = await bookedParcelsCollection.updateOne(
           { _id: new ObjectId(id) },
           {
             $set: {
               deliveryStatus,
               deliveryManId: new ObjectId(deliveryManId),
-              deliveryDate,
+              approximateDeliveryDate,
             },
           }
         );
-    
+
         if (result.matchedCount === 0) {
           return res.status(404).json({ message: "Parcel not found" });
         }
-    
+
         res.status(200).json({
           message: "Parcel updated successfully",
           result,
         });
       } catch (error) {
+        console.log(error);
         res.status(500).json({ message: "Error updating parcel", error });
       }
     });
@@ -226,29 +228,33 @@ async function run() {
     });
 
     // GET PARCEL ID BASED
-    app.get('/parcels/:id', async(req, res) => {
+    app.get("/parcels/:id", async (req, res) => {
       const { id } = req.params;
-      const result = await bookedParcelsCollection.findOne({_id: new ObjectId(id)});
+      const result = await bookedParcelsCollection.findOne({
+        _id: new ObjectId(id),
+      });
       res.send(result);
-    })
+    });
 
-    app.put('/parcels/:id', async(req, res) => {
+
+    // PARCEL UPDATE BY USER
+    app.put("/parcels/:id", async (req, res) => {
       try {
-          const id = req.params.id;
-          let updatedData = req.body;
-          delete updatedData._id; 
-          const filter = { _id: new ObjectId(id) };
-          const update = { $set: updatedData };
-          const result = await bookedParcelsCollection.updateOne(filter, update);
-          if (result.matchedCount === 0) {
-              return res.status(404).json({ error: "Parcel not found" });
-          }
-          res.json({ success: true, modifiedCount: result.modifiedCount });
+        const id = req.params.id;
+        let updatedData = req.body;
+        delete updatedData._id;
+        const filter = { _id: new ObjectId(id) };
+        const update = { $set: updatedData };
+        const result = await bookedParcelsCollection.updateOne(filter, update);
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ error: "Parcel not found" });
+        }
+        res.json({ success: true, modifiedCount: result.modifiedCount });
       } catch (error) {
-          console.error("Error updating parcel:", error);
-          res.status(500).json({ error: "Server error", details: error.message });
+        console.error("Error updating parcel:", error);
+        res.status(500).json({ error: "Server error", details: error.message });
       }
-  });
+    });
 
     // CANCEL A PARCEL BY USER
     app.delete("/parcels/:id", verifyToken, async (req, res) => {
