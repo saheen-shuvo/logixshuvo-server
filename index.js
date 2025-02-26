@@ -174,9 +174,30 @@ async function run() {
     });
 
     // GET ALL BOOKED PARCELS BY USER
-    app.get("/bookedParcels", async (req, res) => {
-      const result = await bookedParcelsCollection.find().toArray();
-      res.send(result);
+    // app.get("/bookedParcels", async (req, res) => {
+    //   const result = await bookedParcelsCollection.find().toArray();
+    //   res.send(result);
+    // });
+
+    // GET ASSIGNED PARCELS FOR A DELIVERYMAN
+    app.get("/bookedParcels", verifyToken, async (req, res) => {
+      try {
+        const { email } = req.query;
+        if (!email) {
+          return res.status(400).json({ message: "Email is Required" });
+        }
+        const deliveryman = await usersCollection.findOne({ email });
+        if (!deliveryman || deliveryman.role !== "deliveryman") {
+          return res.status(404).json({ message: "Deliveryman not found" });
+        }
+        const parcels = await bookedParcelsCollection
+        .find({ deliveryManId: new ObjectId(deliveryman._id) })
+        .toArray();
+        res.status(200).json(parcels);
+      } catch (error) {
+        console.error("Error fetching booked parcels:", error);
+        res.status(500).json({ message: "Server Error", error });
+      }
     });
 
     // UPDATE BOOKED PARCEL BY ADMIN
@@ -235,7 +256,6 @@ async function run() {
       });
       res.send(result);
     });
-
 
     // PARCEL UPDATE BY USER
     app.put("/parcels/:id", async (req, res) => {
