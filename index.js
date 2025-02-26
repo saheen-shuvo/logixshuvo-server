@@ -24,7 +24,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const usersCollection = client.db("logixshuvoDB").collection("users");
     const bookedParcelsCollection = client
@@ -174,13 +174,13 @@ async function run() {
     });
 
     // GET ALL BOOKED PARCELS BY USER
-    // app.get("/bookedParcels", async (req, res) => {
-    //   const result = await bookedParcelsCollection.find().toArray();
-    //   res.send(result);
-    // });
+    app.get("/bookedParcels", async (req, res) => {
+      const result = await bookedParcelsCollection.find().toArray();
+      res.send(result);
+    });
 
     // GET ASSIGNED PARCELS FOR A DELIVERYMAN
-    app.get("/bookedParcels", verifyToken, async (req, res) => {
+    app.get("/myassignedparcels", verifyToken, async (req, res) => {
       try {
         const { email } = req.query;
         if (!email) {
@@ -297,10 +297,10 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
