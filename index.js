@@ -191,12 +191,38 @@ async function run() {
           return res.status(404).json({ message: "Deliveryman not found" });
         }
         const parcels = await bookedParcelsCollection
-        .find({ deliveryManId: new ObjectId(deliveryman._id) })
-        .toArray();
+          .find({ deliveryManId: new ObjectId(deliveryman._id) })
+          .toArray();
         res.status(200).json(parcels);
       } catch (error) {
         console.error("Error fetching booked parcels:", error);
         res.status(500).json({ message: "Server Error", error });
+      }
+    });
+
+    // UPDATE DELIVERY STATUS BY DELIVERY MAN
+    app.patch("/updateStatus/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const { deliveryStatus } = req.body;
+      if (!deliveryStatus) {
+        return res
+          .status(400)
+          .send({ success: false, message: "Delivery status is required" });
+      }
+      try {
+        const result = await bookedParcelsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { deliveryStatus } }
+        );
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, message: "Status updated successfully" });
+        } else {
+          res.status(400).send({ success: false, message: "No changes made" });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Server error", error });
       }
     });
 
