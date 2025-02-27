@@ -166,6 +166,22 @@ async function run() {
       res.send(result);
     });
 
+    // COUNT DELIVERED PARCELS FOR A DELIVERYMAN
+    app.get('/parcelsDelivered/:deliveryManId', verifyToken, async(req, res) => {
+      const {deliveryManId } = req.params;
+      try{
+        const objectId = new ObjectId(deliveryManId);
+        const count = await bookedParcelsCollection.countDocuments({
+          deliveryManId: objectId,
+          deliveryStatus: "delivered"
+        });
+        res.send({success: true, count});
+      } catch (error){
+        console.error("Error fetching delivered count:", error);
+        res.status(500).send({ success: false, message: "Server error", error });
+      }
+    })
+
     // POST BOOKED PARCEL BY USER
     app.post("/bookedParcels", async (req, res) => {
       const parcel = req.body;
