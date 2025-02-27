@@ -75,6 +75,16 @@ async function run() {
       res.send(result);
     });
 
+    // GET ALL USERS
+    app.get("/users/count", async (req, res) => {
+      try {
+        const userCount = await usersCollection.countDocuments();
+        res.json({ totalUsers: userCount });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch user count" });
+      }
+    });
+
     // GET ALL DELIVERYMAN USERS
     app.get(
       "/users/deliveryman",
