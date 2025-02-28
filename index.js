@@ -75,7 +75,7 @@ async function run() {
       res.send(result);
     });
 
-    // GET ALL USERS
+    // GET ALL USERS COUNT
     app.get("/users/count", async (req, res) => {
       try {
         const userCount = await usersCollection.countDocuments();
@@ -96,6 +96,23 @@ async function run() {
         res.send(result);
       }
     );
+
+    // GET USER BY EMAIL
+    app.get("/users/:email", verifyToken, async (req, res) => {
+      try {
+        const email = req.params.email;
+        const user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json(user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ message: "Server error", error });
+      }
+    });
 
     // REGISTER A NEW USER
     app.post("/users", async (req, res) => {
@@ -395,7 +412,7 @@ async function run() {
               { $match: { deliveryManId } },
               {
                 $addFields: {
-                  rating: { $toDouble: "$rating" }
+                  rating: { $toDouble: "$rating" },
                 },
               },
               {
@@ -406,7 +423,7 @@ async function run() {
               },
             ])
             .toArray();
-            console.log(aggregateResult)
+          console.log(aggregateResult);
           if (aggregateResult.length === 0) {
             return res
               .status(404)
@@ -421,6 +438,20 @@ async function run() {
         }
       }
     );
+
+    // GET MY REVIEWS FOR A DELIVERYMAN
+    app.get("/reviews/:deliveryManId", async (req, res) => {
+      try {
+        const { deliveryManId } = req.params;
+        const reviews = await reviewsCollection
+          .find({ deliveryManId })
+          .toArray();
+        res.status(200).json(reviews);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+        res.status(500).json({ message: "Server error", error });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
