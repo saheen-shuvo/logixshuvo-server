@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -451,6 +452,20 @@ async function run() {
         console.error("Error fetching reviews:", error);
         res.status(500).json({ message: "Server error", error });
       }
+    });
+
+    // PAYMENT INTENT
+    app.post("/create-payment-intent", async (req, res) => {
+      const { charge } = req.body;
+      const amount = parseInt(charge * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ['card'],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     // Send a ping to confirm a successful connection
