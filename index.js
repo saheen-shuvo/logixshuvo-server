@@ -462,7 +462,7 @@ async function run() {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
-        payment_method_types: ['card'],
+        payment_method_types: ["card"],
       });
       res.send({
         clientSecret: paymentIntent.client_secret,
@@ -470,12 +470,41 @@ async function run() {
     });
 
     // POST PAYMENT INFO
-    app.post('/payments', async(req, res) => {
+    app.post("/payments", async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
       res.send(paymentResult);
+    });
 
-    })
+    // GET ALL PAYMENT INFO
+    app.get("/payments", async (req, res) => {
+      const result = await paymentCollection.find().toArray();
+      res.send(result);
+    });
+
+    // UPDATE PAYMENT STATUS AFTER SUCCESSFUL PAYMENT
+    app.patch("/updatePaymentStatus/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const { paymentStatus } = req.body;
+      try {
+        const result = await bookedParcelsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { paymentStatus } }
+        );
+        if (result.modifiedCount > 0) {
+          res.send({
+            success: true,
+            message: "Payment status updated successfully",
+          });
+        } else {
+          res.status(400).send({ success: false, message: "No changes made" });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Server error", error });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
