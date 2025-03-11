@@ -32,6 +32,7 @@ async function run() {
       .db("logixshuvoDB")
       .collection("bookedParcels");
     const reviewsCollection = client.db("logixshuvoDB").collection("reviews");
+    const paymentCollection = client.db("logixshuvoDB").collection("payment");
 
     // JWT RELATED API
     app.post("/jwt", async (req, res) => {
@@ -467,6 +468,14 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
+
+    // POST PAYMENT INFO
+    app.post('/payments', async(req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+      res.send(paymentResult);
+
+    })
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
