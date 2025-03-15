@@ -77,6 +77,23 @@ async function run() {
       res.send(result);
     });
 
+    // GET USER ROLE
+    app.get("/users/role/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        console.log(email)
+        const user = await usersCollection.findOne({ email });
+
+        if (user) {
+          res.json({ role: user.role });
+        } else {
+          res.status(404).json({ error: "User not found" });
+        }
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch user role" });
+      }
+    });
+
     // GET ALL USERS COUNT
     app.get("/users/count", async (req, res) => {
       try {
