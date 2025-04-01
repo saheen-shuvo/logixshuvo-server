@@ -72,7 +72,7 @@ async function run() {
     };
 
     // GET ALL USERS
-    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
@@ -81,7 +81,6 @@ async function run() {
     app.get("/users/role/:email", async (req, res) => {
       try {
         const email = req.params.email;
-        console.log(email)
         const user = await usersCollection.findOne({ email });
 
         if (user) {
@@ -109,6 +108,17 @@ async function run() {
       "/users/deliveryman",
       verifyToken,
       verifyAdmin,
+      async (req, res) => {
+        const query = { role: "deliveryman" };
+        const result = await usersCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    // GET TOTAL NUMBER OF DELIVERYMAN USERS
+    app.get(
+      "/users/deliveryman-count",
+      verifyToken,
       async (req, res) => {
         const query = { role: "deliveryman" };
         const result = await usersCollection.find(query).toArray();
@@ -235,6 +245,30 @@ async function run() {
       }
     );
 
+    // STATS OF BOOKING DATA FOR ADMIN
+    app.get("/bookingStats", verifyToken, async (req, res) => {
+      try {
+        const bookedParcels = await bookedParcelsCollection.find().toArray();
+
+        const bookingStats = bookedParcels.reduce((acc, parcel) => {
+          const date = new Date(parcel.bookingDate).toISOString().split("T")[0];
+
+          if (!acc[date]) {
+            acc[date] = { date, booked: 0, delivered: 0 };
+          }
+          acc[date].booked += 1;
+          if (parcel.deliveryStatus === "delivered") {
+            acc[date].delivered += 1;
+          }
+          return acc;
+        }, {});
+        const bookingsByDate = Object.values(bookingStats);
+        res.json({ bookingsByDate });
+      } catch (error) {
+        res.status(500).json({ message: "Server Error", error });
+      }
+    });
+
     // POST BOOKED PARCEL BY USER
     app.post("/bookedParcels", async (req, res) => {
       const parcel = req.body;
@@ -242,8 +276,8 @@ async function run() {
       res.send(result);
     });
 
-    // GET ALL BOOKED PARCELS BY USER
-    app.get("/bookedParcels", async (req, res) => {
+    // GET ALL BOOKED PARCELS
+    app.get("/bookedParcels",verifyToken, async (req, res) => {
       const result = await bookedParcelsCollection.find().toArray();
       res.send(result);
     });
@@ -322,7 +356,6 @@ async function run() {
           result,
         });
       } catch (error) {
-        console.log(error);
         res.status(500).json({ message: "Error updating parcel", error });
       }
     });
@@ -442,7 +475,6 @@ async function run() {
               },
             ])
             .toArray();
-          console.log(aggregateResult);
           if (aggregateResult.length === 0) {
             return res
               .status(404)
@@ -494,9 +526,16 @@ async function run() {
     });
 
     // GET ALL PAYMENT INFO
-    app.get("/payments", async (req, res) => {
+    app.get("/payments", verifyToken, async (req, res) => {
       const result = await paymentCollection.find().toArray();
-      res.send(result);
+      res.send(result)
+    });
+
+    // GET TOTAL REVENUE
+    app.get("/payments/total-revenue", verifyToken, async (req, res) => {
+      const payments = await paymentCollection.find().toArray();
+      const totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.charge), 0);
+      res.send({totalRevenue})
     });
 
     // UPDATE PAYMENT STATUS AFTER SUCCESSFUL PAYMENT
