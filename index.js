@@ -116,15 +116,11 @@ async function run() {
     );
 
     // GET TOTAL NUMBER OF DELIVERYMAN USERS
-    app.get(
-      "/users/deliveryman-count",
-      verifyToken,
-      async (req, res) => {
-        const query = { role: "deliveryman" };
-        const result = await usersCollection.find(query).toArray();
-        res.send(result);
-      }
-    );
+    app.get("/users/deliveryman-count", verifyToken, async (req, res) => {
+      const query = { role: "deliveryman" };
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // GET USER BY EMAIL
     app.get("/users/:email", verifyToken, async (req, res) => {
@@ -226,7 +222,6 @@ async function run() {
     // COUNT DELIVERED PARCELS FOR A DELIVERYMAN
     app.get(
       "/parcelsDelivered/:deliveryManId",
-      verifyToken,
       async (req, res) => {
         const { deliveryManId } = req.params;
         try {
@@ -244,6 +239,38 @@ async function run() {
         }
       }
     );
+
+    // GET TOP 3 DELIVERYMAN FOR HOMEPAGE
+    app.get("/deliveryman/top-rated", async (req, res) => {
+      const deliveryman = await usersCollection
+        .find({ role: "deliveryman" })
+        .toArray();
+      const deliverymanWithRatings = await Promise.all(
+        deliveryman.map(async (user) => {
+          const reviews = await reviewsCollection
+            .find({ deliveryManId: user._id.toString() })
+            .toArray();
+
+          const avgRating =
+            reviews.length > 0
+              ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) /
+                reviews.length
+              : 0;
+          return {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            averageRating: parseFloat(avgRating.toFixed(2)),
+            totalReviews: reviews.length,
+          };
+        })
+      );
+      const top3 = deliverymanWithRatings
+        .sort((a, b) => b.averageRating - a.averageRating)
+        .slice(0, 3);
+      res.send(top3);
+    });
 
     // STATS OF BOOKING DATA FOR ADMIN
     app.get("/bookingStats", verifyToken, async (req, res) => {
@@ -277,7 +304,7 @@ async function run() {
     });
 
     // GET ALL BOOKED PARCELS
-    app.get("/bookedParcels",verifyToken, async (req, res) => {
+    app.get("/bookedParcels", verifyToken, async (req, res) => {
       const result = await bookedParcelsCollection.find().toArray();
       res.send(result);
     });
@@ -528,14 +555,17 @@ async function run() {
     // GET ALL PAYMENT INFO
     app.get("/payments", verifyToken, async (req, res) => {
       const result = await paymentCollection.find().toArray();
-      res.send(result)
+      res.send(result);
     });
 
     // GET TOTAL REVENUE
     app.get("/payments/total-revenue", verifyToken, async (req, res) => {
       const payments = await paymentCollection.find().toArray();
-      const totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.charge), 0);
-      res.send({totalRevenue})
+      const totalRevenue = payments.reduce(
+        (sum, payment) => sum + parseFloat(payment.charge),
+        0
+      );
+      res.send({ totalRevenue });
     });
 
     // UPDATE PAYMENT STATUS AFTER SUCCESSFUL PAYMENT
