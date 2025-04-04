@@ -304,7 +304,7 @@ async function run() {
     });
 
     // GET ALL BOOKED PARCELS
-    app.get("/bookedParcels", verifyToken, async (req, res) => {
+    app.get("/bookedParcels", async (req, res) => {
       const result = await bookedParcelsCollection.find().toArray();
       res.send(result);
     });
